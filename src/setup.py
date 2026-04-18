@@ -45,9 +45,25 @@ def setup_main(
             setup_page(page, title)
             page.appbar = GlobalAppBar()
             
-            # Centering the page only works on pc
-            if center_page and page.platform in PC_PLATFORMS:
-                await page.window.center()
+            if page.platform in PC_PLATFORMS:
+                # Centering the page only works on pc
+                if center_page: await page.window.center()
+                page.appbar.actions.append(
+                    ft.IconButton(
+                        ft.Icons.CLOSE,
+                        on_click=lambda _: page.run_task(page.window.close)
+                    )
+                )
+                page.window.title_bar_hidden = True
+                current_title: str = None
+                if isinstance(page.appbar.title, ft.Text):
+                    current_title = page.appbar.title.value
+                elif isinstance(page.appbar.title, str):
+                    current_title = page.appbar.title
+                if current_title:
+                    page.appbar.title = ft.WindowDragArea(
+                        ft.Text(current_title), expand=True, maximizable=False
+                    )
             
             # This variable will store whatever page_fn returns (if anything)
             handler = None

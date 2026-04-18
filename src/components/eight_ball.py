@@ -13,6 +13,8 @@ class TriangleWithText(ft.Stack):
     triangle_offset: Optional[ft.OffsetValue] = field(
         default_factory=lambda: ft.Offset(x=0, y=-0.025)
     )
+    text_color: ft.ColorValue = ft.Colors.WHITE
+    bgcolor: ft.ColorValue = ft.Colors.INDIGO_900
     
     width: ft.Number = 160
     height: ft.Number = 140
@@ -25,7 +27,7 @@ class TriangleWithText(ft.Stack):
     
     def init(self):
         self.answer_text = ft.Text(
-            value=self.initial_text, color=ft.Colors.WHITE, size=14,
+            value=self.initial_text, color=self.text_color, size=14,
             weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER,
             animate_opacity=ft.Animation(500, ft.AnimationCurve.EASE_IN_OUT),
             width=self.width * 0.5, opacity=1.0
@@ -39,7 +41,7 @@ class TriangleWithText(ft.Stack):
                 cv.Path.Close()
             ],
             paint=ft.Paint(
-                color=ft.Colors.INDIGO_900,
+                color=self.bgcolor,
                 style=ft.PaintingStyle.FILL
             )
         )
@@ -145,11 +147,12 @@ class EightBall(ft.Container):
         self.triangle_thing.scale = 1
         self.triangle_thing.update()
         self.update()
-
-
+        
+        
 @setup_test("Eight Ball Test")
 def main(page: ft.Page):
     page.add(EightBall())
+
 
 if __name__ == "__main__":
     ft.run(main)
