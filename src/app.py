@@ -4,19 +4,62 @@ from datetime import datetime
 from components.eight_ball import EightBall
 from core.routes import APP_ROUTES_DICT
 from core.preferences import Preferences
+from core.assets import Assets
+from core.connection import has_internet_connection
 
 class MainApp:
     def __init__(self, page: ft.Page) -> None:
         self.page = page
         self.prefs = Preferences()
+        self.is_wifi_connected: bool = False
+        self.wifi_btn = ft.IconButton(ft.Icons.WIFI)
     
     async def check_bday(self) -> None:
         now = datetime.now()
         user_name = await self.prefs.get("user_name")
         if user_name is None: return
         user_name = user_name.lower()
-        if now.month == 4 and now.day == 22 and user_name == "isaac":
-            print("Happy birthday!")
+        if now.month != 4 or now.day != 22 or user_name != "isaac": return
+        
+        self.page.show_dialog(
+            ft.AlertDialog(
+                title="Happy Birthday, Isaac!",
+                content=ft.Image(
+                    Assets.images.bday_cake, fit=ft.BoxFit.COVER,
+                    width=self.page.width * 0.25,
+                ),
+                actions=[
+                    ft.Button(
+                        content="Thanks", icon=ft.Icons.CAKE_ROUNDED,
+                        on_click=lambda e: e.page.pop_dialog()
+                    )
+                ]
+            )
+        )
+    
+    def check_connection(self, *, show_notifs: bool = True) -> None:
+        if self.is_wifi_connected:
+            if not show_notifs: return
+            self.page.show_dialog(
+                ft.SnackBar("WiFi is already connected!", duration=2000)
+            )
+            return
+        
+        if show_notifs:
+            self.page.show_dialog(ft.SnackBar("Attempting connection to WiFi..."))
+            
+        self.is_wifi_connected = has_internet_connection()
+        self.wifi_btn.icon = (
+            ft.Icons.WIFI if self.is_wifi_connected else ft.Icos.WIFI_OFF
+        )
+        try: self.wifi_btn.update()
+        except RuntimeError: pass
+        
+        if not show_notifs: return
+        if not self.is_wifi_connected:
+            self.page.show_dialog(ft.SnackBar("Connection failed!", duration=2000))
+            return
+        self.page.show_dialog(ft.SnackBar("Connection successful!", duration=2000))
     
     def setup(self) -> None:
         """Adds other page-specific configurations."""
@@ -32,27 +75,48 @@ class MainApp:
             )
         )
         theme_toggle_btn: ft.IconButton = self.page.appbar.actions[0]
-        theme_toggle_btn.on_long_press = self.on_long_press
+        theme_toggle_btn.on_long_press = self.on_long_press_ttb
+        self.check_connection(show_notifs=False)
+        self.wifi_btn.on_click = lambda _: self.check_connection()
+        self.page.appbar.actions.insert(1, self.wifi_btn)
     
-    async def on_long_press(self, _) -> None:
+    async def on_long_press_ttb(self, _) -> None:
         async def on_submit(e: ft.Event[ft.TextField]) -> None:
             data: str = e.data
             data.strip()
             if data is None or data == "":
                 e.control.error = "Name cannot be empty!"
                 e.control.update()
-            else:
-                e.control.error = ""
+                return
+            
+            e.control.error = ""
+            e.control.update()
+            e.page.pop_dialog()
+            
+            if data.lower() == "clear":
+                success = await self.prefs.clear()
+                e.page.show_dialog(
+                    ft.SnackBar(
+                        "Cleared all preferences!"
+                        if success else
+                        "Failed to clear all preferences...",
+                        duration=3000
+                    )
+                )
+                e.control.value = ""
                 e.control.update()
-                e.page.pop_dialog()
-                if await self.prefs.set("user_name", data):
-                    e.page.show_dialog(
-                        ft.SnackBar(f"Successfully set user_name to: {data}")
-                    )
-                else:
-                    e.page.show_dialog(
-                        ft.SnackBar(f"Failed to set user_name to: {data}")
-                    )
+                return
+            
+            success = await self.prefs.set("user_name", data)
+            e.page.show_dialog(
+                ft.SnackBar(
+                    f"Successfully set user_name to: {data}"
+                    if success else
+                    f"Failed to set user_name to: {data}",
+                    duration=3000
+                )
+            )
+            await self.check_bday()
         
         user_name = await self.prefs.get("user_name")
         dlg = ft.AlertDialog(
@@ -72,7 +136,7 @@ class MainApp:
                     size=32, color=ft.Colors.PRIMARY, weight=ft.FontWeight.BOLD
                 ),
                 ft.Text(
-                    "To start, please open the navigation menu to the top-left of the screen.",
+                    "To start, please open the navigation menu at the top-left of the screen.",
                     size=16, color=ft.Colors.SECONDARY,
                 ),
                 ft.Text(

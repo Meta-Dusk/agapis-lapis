@@ -5,7 +5,7 @@ from app import MainApp
 from core.routes import AppRoutes
 
 @setup_main()
-def main(page: ft.Page):
+async def main(page: ft.Page):
     app = MainApp(page)
     
     def route_change():
@@ -33,6 +33,6 @@ def main(page: ft.Page):
     page.add(view_container)
     app.setup()
     route_change()
-
+    await app.check_bday()
 
 ft.run(main)
