@@ -309,9 +309,9 @@ class MainApp:
             try_update(progress_txt)
         
         async def on_fab_click(e: ft.Event[AnimatedFAB]) -> None:
-            e.control.disabled = True
-            try_update(e.control)
-            e.control._emphasis(e)
+            if e.page.floating_action_button:
+                e.page.floating_action_button = None
+            e.page.update()
             for seg in seg_btn.segments:
                 if seg.disabled: continue
                 seg.disabled = True
@@ -342,8 +342,9 @@ class MainApp:
                     continue
                 seg.disabled = False
             try_update(seg_btn)
-            e.control.disabled = False
-            try_update(e.control)
+            if e.page.floating_action_button is None:
+                e.page.floating_action_button = AnimatedFAB(on_click=on_fab_click)
+            e.page.update()
         
         def on_change(e: ft.Event[ft.SegmentedButton]) -> None:
             self.check_connection(show_notifs=False)
