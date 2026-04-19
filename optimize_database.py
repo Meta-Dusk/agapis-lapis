@@ -25,13 +25,13 @@ def convert_csv_to_sqlite():
         reader = csv.DictReader(f)
         
         for row in reader:
-            quote_text = row.get("quote", "").strip()
+            quote_text = row.get("quote", None).strip()
             author_text = row.get("author", "Unknown").strip()
-            tags_text = row.get("tags", row.get("category", "")).lower()
+            tags_text = row.get("category").lower().split(",")
             
-            if quote_text and len(quote_text) < 120:
-                if "love" in tags_text:
-                    db_data.append((quote_text, author_text))
+            if quote_text is None: continue
+            if "love" in tags_text:
+                db_data.append((quote_text, author_text))
 
     print(f"Inserting {len(db_data)} filtered quotes into SQLite...")
     # Insert everything at once for maximum speed

@@ -1,6 +1,6 @@
 [project]
 name = "agapis-lapis"
-version = "0.1.1"
+version = "0.2.0"
 description = "A love quotes generator app... Or is it?"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -15,7 +15,7 @@ dependencies = [
 
 [tool.flet]
 org = "com.metadusk"
-product = "Agapis Lapis: LQG"
+product = "Agapis Lapis"
 company = "MetaDusk Inc."
 copyright = "Copyright (C) 2025 MetaDusk"
 compile_app = true

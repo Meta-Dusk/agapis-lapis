@@ -14,6 +14,7 @@ try:
     api_key = os.environ["CEREBRAS_API_KEY"]
 except KeyError:
     print("Error: Missing API Key!")
+    api_key = None
 
 client = AsyncCerebras(api_key=api_key)
 
@@ -69,10 +70,7 @@ def main(page: ft.Page) -> None:
         loading_ring.update()
     
     txt = DefaultText("Press the heart for a love quote!")
-    loading_ring = ft.AnimatedSwitcher(
-        ft.ProgressRing(width=50, height=50),
-        duration=100, reverse_duration=100, visible=False
-    )
+    loading_ring = ft.ProgressRing(width=50, height=50, visible=False)
     
     page.floating_action_button = ft.FloatingActionButton(
         icon=ft.Icons.FAVORITE, on_click=render_quote

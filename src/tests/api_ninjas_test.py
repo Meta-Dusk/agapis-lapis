@@ -1,18 +1,12 @@
 import flet as ft
 import os, httpx
-from typing import Optional, TypeAlias
+from typing import Optional, TypeAlias, Literal
 from dotenv import load_dotenv
-from enum import Enum
 
 from tests.test_handler import setup_test
 from components.text import DefaultText
 
-
-class ResponseType(Enum):
-    QUOTE = "quote"
-    AUTHOR = "author"
-    WORK = "work"
-
+ResponseType: TypeAlias = Literal["author", "quote", "work"]
 ResponseData: TypeAlias = list[dict[ResponseType, str]]
 
 load_dotenv()
@@ -39,8 +33,8 @@ async def fetch_love_quote() -> Optional[str]:
                 print("No quotes found for this category.")
                 return
             
-            quote = data[0].get(ResponseType.QUOTE, "Missing quote")
-            author = data[0].get(ResponseType.AUTHOR, "Unknown")
+            quote = data[0].get("quote", "Missing quote")
+            author = data[0].get("author", "Unknown")
             
             formatted_quote = f"\"{quote}\"\n— {author}"
             print(formatted_quote)
@@ -69,10 +63,7 @@ def test(page: ft.Page) -> None:
         loading_ring.update()
     
     txt = DefaultText("Press the heart for a love quote!")
-    loading_ring = ft.AnimatedSwitcher(
-        ft.ProgressRing(width=50, height=50),
-        duration=100, reverse_duration=100, visible=False
-    )
+    loading_ring = ft.ProgressRing(width=50, height=50, visible=False)
     
     page.floating_action_button = ft.FloatingActionButton(
         icon=ft.Icons.FAVORITE,
