@@ -66,6 +66,42 @@ class TriangleWithText(ft.Stack):
     def update_answer(self, new_text: str) -> None:
         self.answer_text.value = new_text
         self.answer_text.update()
+        
+    def update_sizes(
+        self, radius: float, window_scale: float, triangle_base_scale: float
+    ) -> None:
+        self.width = (radius * triangle_base_scale) * window_scale / 2
+        self.height = radius * window_scale / 2
+        
+        self.answer_text.width = self.width * 0.5
+        self.answer_text.size = max(8, radius * 0.035) 
+        
+        triangle_path = cv.Path(
+            elements=[
+                cv.Path.MoveTo(self.width / 2, 0),
+                cv.Path.LineTo(self.width, self.height),
+                cv.Path.LineTo(0, self.height),
+                cv.Path.Close()
+            ],
+            paint=ft.Paint(
+                color=self.bgcolor,
+                style=ft.PaintingStyle.FILL
+            )
+        )
+        self.canvas.width = self.width
+        self.canvas.height = self.height
+        self.canvas.shapes = [triangle_path]
+        
+        text_container = self.controls[1]
+        text_container.width = self.width
+        text_container.height = self.height
+        text_container.padding = ft.Padding.only(
+            top=self.height * 0.27, 
+            left=self.width * 0.08, 
+            right=self.width * 0.08
+        )
+        
+        self.update()
 
 @ft.control
 class EightBall(ft.Container):
@@ -147,6 +183,39 @@ class EightBall(ft.Container):
         self.triangle_thing.scale = 1
         self.triangle_thing.update()
         self.update()
+    
+    def update_sizes(self, available_size: float) -> None:
+        # Cap the max radius at 400 so it doesn't get ridiculously huge on PCs.
+        # Multiply by 0.9 to leave a 10% padding margin around the ball.
+        self.radius = min(400, available_size * 0.9)
+        
+        # Update Main Ball Dimensions (Make border_radius exactly half for a perfect circle)
+        self.width = self.radius
+        self.height = self.radius
+        self.border_radius = self.radius / 2
+        
+        # Update Inner Window Dimensions
+        self.window.width = self.radius * self.window_scale
+        self.window.height = self.radius * self.window_scale
+        self.window.border_radius = self.radius / 2
+        
+        # Trigger the triangle to recalculate its inner math
+        self.triangle_thing.update_sizes(self.radius, self.window_scale, self.triangle_base_scale)
+        self.update()
+    
+    def handle_resize(self, e) -> None:
+        # Find the smallest dimension (Width vs Height)
+        available_size = min(self.page.width, self.page.height)
+        self.update_sizes(available_size)
+        
+        # Call the old resize handler if one existed
+        if hasattr(self, 'old_resize') and self.old_resize:
+            self.old_resize(e)
+    
+    def did_mount(self):
+        self.old_resize = self.page.on_resize
+        self.page.on_resize
+        self.handle_resize(None)
         
         
 @setup_test("Eight Ball Test")

@@ -138,6 +138,13 @@ class MainApp:
         self.page.appbar.actions.insert(1, self.wifi_btn)
         self.page.update()
         print("[MainApp] Finished setup 2/2")
+        
+        async def wake_proxy_server() -> None:
+            print("[MainApp] Sending silent wake-up ping to proxy server...")
+            await self.api.get_ninja_quote() 
+            print("[MainApp] Proxy server is awake and ready!")
+        
+        self.page.run_task(wake_proxy_server)
     
     async def on_long_press_ttb(self, _) -> None:
         async def on_submit(e: ft.Event[ft.TextField]) -> None:
@@ -217,7 +224,8 @@ class MainApp:
                     duration=3000
                 )
             )
-            await self.check_bday()
+            is_bday = await self.check_bday()
+            if is_bday: self.show_bday_dlg()
         
         def on_change(e: ft.Event[ft.TextField]) -> None:
             data: str = e.data
@@ -319,40 +327,40 @@ class MainApp:
         async def on_fab_click(e: ft.Event[AnimatedFAB]) -> None:
             if e.page.floating_action_button:
                 e.page.floating_action_button = None
-            e.page.update()
+            
             for seg in seg_btn.segments:
-                if seg.disabled: continue
-                seg.disabled = True
-            try_update(seg_btn)
-                
+                if not seg.disabled:
+                    seg.disabled = True
+                    
             value = seg_btn.selected[0]
-            if value == "local":
-                await fetch_local_quote()
-            else:
+            
+            if value != "local":
                 spinner.visible = True
-                try_update(spinner)
                 self.quote_txt.value = "Loading new quote..."
-                try_update(self.quote_txt)
-                
-            if value == "api_ninjas":
-                fetch_api_quote(await self.api.get_ninja_quote())
-            elif value == "cerebras":
-                fetch_api_quote(await self.api.get_cerebras_quote())
-                
-            spinner.visible = False
-            try_update(spinner)
-            for seg in seg_btn.segments:
-                if (
-                    seg in self._wifi_req_segs and
-                    not self.is_wifi_connected and
-                    seg.disabled
-                ):
-                    continue
-                seg.disabled = False
-            try_update(seg_btn)
-            if e.page.floating_action_button is None:
-                e.page.floating_action_button = AnimatedFAB(on_click=on_fab_click)
+            
             e.page.update()
+            
+            async def perform_fetch():
+                if value == "local":
+                    await fetch_local_quote()
+                elif value == "api_ninjas":
+                    fetch_api_quote(await self.api.get_ninja_quote())
+                elif value == "cerebras":
+                    fetch_api_quote(await self.api.get_cerebras_quote())
+                    
+                spinner.visible = False
+                
+                for seg in seg_btn.segments:
+                    if seg in self._wifi_req_segs and not self.is_wifi_connected:
+                        continue
+                    seg.disabled = False
+                    
+                if e.page.floating_action_button is None:
+                    e.page.floating_action_button = AnimatedFAB(on_click=on_fab_click)
+                
+                e.page.update()
+                
+            e.page.run_task(perform_fetch)
         
         def on_change(e: ft.Event[ft.SegmentedButton]) -> None:
             self.check_connection(show_notifs=False)
@@ -415,7 +423,7 @@ class MainApp:
             self.page.floating_action_button = None
         self.page.appbar.title = "Magic Eight Ball"
         return ft.Container(
-            content=EightBall(radius=self.page.width * 0.45),
+            content=EightBall(),
             alignment=ft.Alignment.CENTER,
             expand=True, key="magic_eight_ball"
         )
