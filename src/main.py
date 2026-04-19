@@ -51,7 +51,6 @@ async def main(page: ft.Page):
     page.add(view_container)
     app.setup()
     route_change()
-    page.run_task(app.start_apis)
     
     if await app.check_bday():
         await asyncio.sleep(2)
