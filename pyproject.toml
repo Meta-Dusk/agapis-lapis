@@ -1,6 +1,6 @@
 [project]
 name = "agapis-lapis"
-version = "0.3.2"
+version = "0.3.3"
 description = "A love quotes generator app... Or is it?"
 readme = "README.md"
 requires-python = ">=3.13"
