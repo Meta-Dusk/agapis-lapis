@@ -1,6 +1,6 @@
 [project]
 name = "agapis-lapis"
-version = "0.2.0"
+version = "0.2.1"
 description = "A love quotes generator app... Or is it?"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -36,7 +36,7 @@ include = ["assets"]
 
 [tool.flet.splash]
 color = "#ffffff"
-dark_color = "#333333"
+dark_color = "#1c2120"
 
 [tool.flet.app]
 path = "src"

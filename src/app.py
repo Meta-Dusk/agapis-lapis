@@ -34,6 +34,8 @@ class MainApp:
         ]
         self.wifi_req_ctrls: list[ft.Control] = [*self._wifi_req_segs]
         self.api: APIManager = None
+        self.quote_txt: DefaultText = None
+        self.progress_txt: DefaultText = None
         print("[MainApp] Finished setup 1/3")
     
     @property
@@ -179,6 +181,9 @@ class MainApp:
             elif data == "db.reset":
                 force_fresh_database()
                 clear_val()
+                self.quote_txt.value = "Press the heart to get a quote!"
+                try_update(self.quote_txt)
+                self.update_stats_txt()
                 return
             
             elif data == "progress.reset":
@@ -288,25 +293,29 @@ class MainApp:
             expand=True, key="home"
         )
 
+    def update_stats_txt(self, update: bool = True) -> None:
+        stats = get_progress_stats()
+        self.progress_txt.value = f"Discovered: {stats.seen} / {stats.total}"
+        if update: try_update(self.progress_txt)
+    
     def get_lqg_view(self):
         async def fetch_local_quote() -> None:
             stats = get_progress_stats()
             quote = get_unseen_quote()
-            quote_txt.value = (
+            self.quote_txt.value = (
                 f"{quote.quote}\n— {quote.author}"
                 if quote else
                 f"🏆 ACHIEVEMENT UNLOCKED 🏆\nYou have read all {stats.total} quotes!"
             )
-            try_update(quote_txt)
-            progress_txt.value = f"Discovered: {stats.seen} / {stats.total}"
-            progress_txt.visible = True
-            try_update(progress_txt)
+            try_update(self.quote_txt)
+            self.progress_txt.visible = True
+            self.update_stats_txt()
         
         def fetch_api_quote(text: str) -> None:
-            quote_txt.value = text
-            try_update(quote_txt)
-            progress_txt.visible = False
-            try_update(progress_txt)
+            self.quote_txt.value = text
+            try_update(self.quote_txt)
+            self.progress_txt.visible = False
+            try_update(self.progress_txt)
         
         async def on_fab_click(e: ft.Event[AnimatedFAB]) -> None:
             if e.page.floating_action_button:
@@ -323,8 +332,8 @@ class MainApp:
             else:
                 spinner.visible = True
                 try_update(spinner)
-                quote_txt.value = "Loading new quote..."
-                try_update(quote_txt)
+                self.quote_txt.value = "Loading new quote..."
+                try_update(self.quote_txt)
                 
             if value == "api_ninjas":
                 fetch_api_quote(await self.api.get_ninja_quote())
@@ -349,15 +358,15 @@ class MainApp:
         def on_change(e: ft.Event[ft.SegmentedButton]) -> None:
             self.check_connection(show_notifs=False)
             if e.control.selected[0] != "local":
-                progress_txt.visible = False
+                self.progress_txt.visible = False
             else:
-                progress_txt.visible = True
-            try_update(progress_txt)
+                self.progress_txt.visible = True
+            try_update(self.progress_txt)
         
-        quote_txt = DefaultText("Press the heart to get a quote!")
+        self.quote_txt = DefaultText("Press the heart to get a quote!")
         spinner = ft.ProgressRing(width=50, height=50, visible=False)
         stats = get_progress_stats()
-        progress_txt = DefaultText(
+        self.progress_txt = DefaultText(
             f"Discovered: {stats.seen} / {stats.total}",
             size=14, color=ft.Colors.OUTLINE
         )
@@ -385,10 +394,10 @@ class MainApp:
                 ft.Column(
                     controls=[
                         ft.AnimatedSwitcher(
-                            quote_txt, duration=100,
+                            self.quote_txt, duration=100,
                             reverse_duration=100
                         ),
-                        progress_txt,
+                        self.progress_txt,
                         spinner
                     ],
                     alignment=ft.MainAxisAlignment.CENTER,
