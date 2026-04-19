@@ -19,7 +19,7 @@ dev = [
 
 [tool.flet]
 org = "com.metadusk"
-product = "Agapis Lapis"
+product = "AgapisLapis"
 company = "MetaDusk Inc."
 copyright = "Copyright (C) 2025 MetaDusk"
 compile_app = true
