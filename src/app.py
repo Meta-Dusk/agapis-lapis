@@ -33,10 +33,10 @@ class MainApp:
             )
         ]
         self.wifi_req_ctrls: list[ft.Control] = [*self._wifi_req_segs]
-        self.api: APIManager = None
+        self.api = APIManager()
         self.quote_txt: DefaultText = None
         self.progress_txt: DefaultText = None
-        print("[MainApp] Finished setup 1/3")
+        print("[MainApp] Finished setup 1/2")
     
     @property
     def is_wifi_connected(self) -> bool:
@@ -137,12 +137,7 @@ class MainApp:
         self.wifi_btn.on_click = lambda _: self.check_connection()
         self.page.appbar.actions.insert(1, self.wifi_btn)
         self.page.update()
-        print("[MainApp] Finished setup 2/3")
-    
-    async def start_apis(self) -> None:
-        self.api = APIManager()
-        self.api.start()
-        print("[MainApp] Finished setup 3/3")
+        print("[MainApp] Finished setup 2/2")
     
     async def on_long_press_ttb(self, _) -> None:
         async def on_submit(e: ft.Event[ft.TextField]) -> None:

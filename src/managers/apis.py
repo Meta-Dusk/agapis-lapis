@@ -1,97 +1,77 @@
-import httpx, os
-from dotenv import load_dotenv
-from typing import TypeAlias, Optional, Literal
+import httpx
+from typing import Optional, Literal
 from dataclasses import dataclass
-from cerebras.cloud.sdk import AsyncCerebras
-
-ResponseType: TypeAlias = Literal["author", "quote", "work"]
-ResponseData: TypeAlias = list[dict[ResponseType, str]]
 
 @dataclass
-class APIKeyType:
-    ninja: Optional[str] = None
-    cerebras: Optional[str] = None
+class QuoteData:
+    quote: str
+    author: str
+    source: str
+
+@dataclass
+class ProxyURL:
+    base: str
+    
+    def get_quote(self, endpoint: Literal["ninja", "cerebras"]) -> str:
+        return f"{self.base}/generate-quote/{endpoint}"
 
 class APIManager:
     def __init__(self):
-        self.api_keys = APIKeyType()
-        self.client: AsyncCerebras = None
+        self.proxy = ProxyURL("https://agapis-lapis-proxy.onrender.com")
+        print("[APIManager] Connected to proxy server.")
     
-    def start(self) -> None:
-        load_dotenv()
+    async def get_ninja_quote(self) -> Optional[QuoteData]:
+        endpoint = self.proxy.get_quote("ninja")
         
-        try:
-            self.api_keys.ninja = os.environ["NINJAS_API_KEY"]
-        except KeyError:
-            print("Error: Missing Ninjas API Key!")
-        
-        try:
-            self.api_keys.cerebras = os.environ["CEREBRAS_API_KEY"]
-        except KeyError:
-            print("Error: Missing Cerebras API Key!")
-        
-        self.client = AsyncCerebras(api_key=self.api_keys.cerebras)
-        print("[APIManager] Finished setup.")
-    
-    async def get_ninja_quote(self) -> Optional[str]:
-        if self.api_keys.ninja is None: return
-        
-        api_url = "https://api.api-ninjas.com/v2/randomquotes?categories=love"
-        headers = {"X-Api-Key": self.api_keys.ninja}
-        
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=10.0) as client:
             try:
-                response = await client.get(api_url, headers=headers, timeout=3.0)
-                response.raise_for_status()
-                data: ResponseData = response.json()
+                response = await client.get(endpoint)
+                data: dict[str, bool | str] = response.json()
                 
-                if not data:
-                    print("No quotes found for this category.")
-                    return
-                
-                quote = data[0].get("quote", "Missing quote")
-                author = data[0].get("author", "Unknown")
-                
-                formatted_quote = f"\"{quote}\"\n— {author}"
-                print(f"[Ninjas] {formatted_quote}")
-                
-                return formatted_quote
-                    
+                if data.get("success"):
+                    return QuoteData(
+                        quote=data.get("quote"),
+                        author=data.get("author"),
+                        source=data.get("source", "api-ninjas")
+                    )
+                return None
             except Exception as e:
-                print(f"Oops! Something went wrong: {e}")
-                return
-    
-    async def get_cerebras_quote(self, theme: Optional[str] = None, language: str = "English") -> str:
-        if self.api_keys.cerebras is None: return "[Cerebras] Missing API Key!"
+                print(f"[Ninja Proxy Error]: {e}")
+                return None
+
+    async def get_cerebras_quote(self, vibe: str = "general love", language: str = "English") -> Optional[QuoteData]:
+        endpoint = self.proxy.get_quote("cerebras")
         
-        vibe = theme if theme else "general love"
+        # httpx handles passing these variables into the URL automatically
+        params = {
+            "vibe": vibe,
+            "language": language
+        }
         
-        system_prompt = f"""
-        You are a modern world-class curator of romantic literature and a poetic translator.
-        Your goal is to provide a beautiful, short love quote in {language}.
-        The quotes should be short like a one-liner for maximum impact.
-        An example of a quote you could make would be: "I want to be your favorite hello and your hardest goodbye."
-        
-        RULES:
-        1. If a famous quote exists for the theme "{vibe}", provide it with the author's name.
-        2. If no famous quote fits, generate an original, soul-stirring quote in the style of 19th-century or modern poets.
-        3. The quote MUST be in {language}. If there are no quotes in {language}, then you can just translate it.
-        4. FORMAT: "Quote text" \n— Author Name (or 'Unknown' if you wrote it).
-        """
-        
-        user_prompt = f"Give me one heart-touching quote about {vibe}."
-        try:
-            response = await self.client.chat.completions.create(
-                model="llama3.1-8b",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                temperature=1.0,
-                top_p=0.9,
-                max_tokens=600,
-                stream=False
-            )
-            return response.choices[0].message.content
-        except Exception as e:
-            return str(e)
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            try:
+                response = await client.get(endpoint, params=params)
+                data = response.json()
+                
+                if data.get("success"):
+                    # The server returns the AI's raw text: "Quote" \n— Author
+                    raw_text = data.get("text", "")
+                    
+                    # We split the string to fit our strictly typed QuoteData!
+                    if "—" in raw_text:
+                        parts = raw_text.rsplit("—", 1)
+                        quote_part = parts[0].strip().strip('"').strip() # Removes the quotes and spaces
+                        author_part = parts[1].strip()
+                    else:
+                        quote_part = raw_text.strip().strip('"').strip()
+                        author_part = "Unknown"
+
+                    return QuoteData(
+                        quote=quote_part,
+                        author=author_part,
+                        source="cerebras"
+                    )
+                return None
+            except Exception as e:
+                print(f"[Cerebras Proxy Error]: {e}")
+                return None

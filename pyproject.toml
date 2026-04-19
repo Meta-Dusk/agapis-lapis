@@ -1,24 +1,20 @@
 [project]
 name = "agapis-lapis"
-version = "0.2.1"
+version = "0.3.0"
 description = "A love quotes generator app... Or is it?"
 readme = "README.md"
 requires-python = ">=3.13"
 authors = [{ name = "MetaDusk", email = "andredcxxv@gmail.com" }]
 license = { text = "AGPL-3.0" }
 
-dependencies = [
-    "cerebras-cloud-sdk>=1.67.0",
-    "flet>=0.81.5",
-    "python-dotenv>=1.2.1",
-]
+dependencies = ["flet>=0.84.0"]
 
 [dependency-groups]
 dev = [
-    "flet-cli>=0.81.0",
-    "flet-desktop>=0.81.0",
-    "flet-web>=0.81.0",
-    "tomlkit>=0.13.3",
+    "flet-cli>=0.84.0",
+    "flet-desktop>=0.84.0",
+    "flet-web>=0.84.0",
+    "tomlkit>=0.14.0",
 ]
 
 [tool.flet]
@@ -40,7 +36,14 @@ dark_color = "#1c2120"
 
 [tool.flet.app]
 path = "src"
-exclude = ["src/tests", "tools"]
+exclude = [
+    "tests",
+    "tests/**",
+    "__pycache__",
+    "*.pyc",
+    "*.egg-info",
+    "*.egg-info/**",
+]
 
 [tool.flet.app.boot_screen]
 show = true
