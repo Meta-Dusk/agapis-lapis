@@ -148,7 +148,7 @@ def main():
 
     # Step 1: Initial info
     info = get_build_info()
-    print_section("🚀 BUILDING PRODUCTIVITY APP")
+    print_section(f"🚀 BUILDING {APP_NAME.upper()} APP")
     print_block(f"""
 📦 Version: {info.version}
 🔢 Build number (before): {info.build_number}

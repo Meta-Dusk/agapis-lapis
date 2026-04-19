@@ -1,6 +1,6 @@
 [project]
 name = "agapis-lapis"
-version = "0.3.1"
+version = "0.3.2"
 description = "A love quotes generator app... Or is it?"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -19,7 +19,7 @@ dev = [
 
 [tool.flet]
 org = "com.metadusk"
-product = "Agapis Lapis"
+product = "AgapisLapis"
 company = "MetaDusk Inc."
 copyright = "Copyright (C) 2025 MetaDusk"
 compile_app = true

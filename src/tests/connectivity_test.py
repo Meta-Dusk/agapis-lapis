@@ -1,6 +1,6 @@
 import flet as ft
 
-from tests.test_handler import setup_test
+from core.test_handler import setup_test
 
 @setup_test("Connectivity Test")
 async def main(page: ft.Page):

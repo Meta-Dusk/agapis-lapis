@@ -4,7 +4,7 @@ import random, asyncio
 from typing import Optional
 from dataclasses import field
 
-from tests.test_handler import setup_test
+from core.test_handler import setup_test
 
 @ft.control
 class TriangleWithText(ft.Stack):
