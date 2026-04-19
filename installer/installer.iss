@@ -2,7 +2,7 @@
 ; Safe to share publicly — contains no private data
 ; Paths are relative, version is auto-updated by build script
 
-#define MyAppName "Agapis Lapis"
+#define MyAppName "AgapisLapis"
 #ifndef MyAppVersion
 #define MyAppVersion "0.0.0"
 #endif
