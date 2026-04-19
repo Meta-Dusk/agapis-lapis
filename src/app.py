@@ -12,7 +12,7 @@ from core.assets import Assets
 from core.connection import has_internet_connection
 from core.local_database import get_progress_stats, get_unseen_quote, set_all_progress, force_fresh_database
 from core.components import try_update
-from managers.apis import APIManager
+from managers.apis import APIManager, QuoteData
 
 class MainApp:
     def __init__(self, page: ft.Page) -> None:
@@ -306,8 +306,12 @@ class MainApp:
             self.progress_txt.visible = True
             self.update_stats_txt()
         
-        def fetch_api_quote(text: str) -> None:
-            self.quote_txt.value = text
+        def fetch_api_quote(text: Optional[QuoteData]) -> None:
+            self.quote_txt.value = (
+                f"{text.quote}\n— {text.author}"
+                if text is not None else
+                "Error: Please try again later"
+            )
             try_update(self.quote_txt)
             self.progress_txt.visible = False
             try_update(self.progress_txt)
