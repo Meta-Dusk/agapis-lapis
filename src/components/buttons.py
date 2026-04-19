@@ -4,10 +4,12 @@ from dataclasses import field
 
 @ft.control
 class ToggleThemeButton(ft.IconButton):
+    icon: Optional[ft.IconDataOrControl] = ft.Icons.DARK_MODE
+    adaptive: Optional[bool] = True
+    tooltip: Optional[ft.TooltipValue] = "Press to toggle the theme!"
+    
     def init(self):
         self.on_click = self.on_toggle_theme
-        self.icon = ft.Icons.DARK_MODE
-        self.adaptive = True
     
     def did_mount(self):
         self.icon = (
@@ -34,7 +36,8 @@ class AnimatedFAB(ft.FloatingActionButton):
     is_animating: bool = False
     
     def init(self) -> None:
-        self.on_click = self._emphasis
+        if self.on_click is None:
+            self.on_click = self._emphasis
         self.on_animation_end = self._on_animation_end
     
     def _emphasis(self, e: ft.Event[ft.FloatingActionButton]) -> None:

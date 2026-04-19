@@ -9,7 +9,7 @@ from tests.test_handler import setup_test
 @ft.control
 class TriangleWithText(ft.Stack):
     """A simple triangle render with text in the center."""
-    initial_text: str = "CLICK TO ASK"
+    initial_text: str = "PRESS TO ASK"
     triangle_offset: Optional[ft.OffsetValue] = field(
         default_factory=lambda: ft.Offset(x=0, y=-0.025)
     )

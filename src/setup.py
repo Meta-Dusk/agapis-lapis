@@ -5,7 +5,6 @@ from functools import wraps
 
 from components.appbar import GlobalAppBar
 
-
 OptionalCallableKeyboardEvent: TypeAlias = Optional[Callable[[ft.KeyboardEvent], None]]
 MOBILE_PLATFORMS = {ft.PagePlatform.ANDROID, ft.PagePlatform.IOS}
 PC_PLATFORMS = {ft.PagePlatform.LINUX, ft.PagePlatform.MACOS, ft.PagePlatform.WINDOWS}
@@ -55,15 +54,6 @@ def setup_main(
                     )
                 )
                 page.window.title_bar_hidden = True
-                current_title: str = None
-                if isinstance(page.appbar.title, ft.Text):
-                    current_title = page.appbar.title.value
-                elif isinstance(page.appbar.title, str):
-                    current_title = page.appbar.title
-                if current_title:
-                    page.appbar.title = ft.WindowDragArea(
-                        ft.Text(current_title), expand=True, maximizable=False
-                    )
             
             # This variable will store whatever page_fn returns (if anything)
             handler = None

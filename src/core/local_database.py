@@ -38,6 +38,17 @@ def get_writable_db() -> Path:
         
     return writable_db
 
+def force_fresh_database() -> None:
+    user_dir = Path.home() / ".agapis_lapis_data"
+    writable_db = user_dir / "love_quotes.db"
+    
+    if writable_db.exists():
+        os.remove(writable_db)
+        print("Old database deleted.")
+        
+    get_writable_db()
+    print("Fresh database installed!")
+
 def get_unseen_quote() -> Optional[QuoteData]:
     db_path = get_writable_db()
     conn = sqlite3.connect(db_path)
