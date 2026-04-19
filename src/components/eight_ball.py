@@ -79,7 +79,7 @@ class EightBall(ft.Container):
     triangle_base_scale: float = 1.5
     
     bgcolor: Optional[ft.ColorValue] = ft.Colors.INDIGO_900
-    border_radius: Optional[ft.BorderRadiusValue] = radius / 2
+    border_radius: Optional[ft.BorderRadiusValue] = radius
     border: Optional[ft.Border] = field(
         default_factory=lambda: ft.Border.all(2, ft.Colors.INDIGO_ACCENT_700)
     )

@@ -20,15 +20,24 @@ def get_assets_dir() -> Path:
     return Path(os.environ.get("FLET_ASSETS_DIR", str(default_assets_dir))).resolve()
 
 def get_writable_db() -> Path:
-    # Create a hidden, writable folder in the user's OS directory
-    user_dir = Path.home() / ".agapis_lapis_data"
-    user_dir.mkdir(exist_ok=True)
+    # Ask Flet for the official, safe mobile storage directory
+    storage_env = os.environ.get("FLET_APP_STORAGE_DATA")
+    
+    if storage_env:
+        # On Mobile (APK), put it safely inside the app's internal sandbox
+        user_dir = Path(storage_env) / "agapis_lapis_data"
+    else:
+        # On local Desktop runs, fallback to the Windows/Mac home directory
+        user_dir = Path.home() / ".agapis_lapis_data"
+        
+    # Add 'parents=True' to ensure it builds the whole folder tree without crashing
+    user_dir.mkdir(parents=True, exist_ok=True)
     
     writable_db = user_dir / "love_quotes.db"
     
     if not writable_db.exists():
         print("First boot detected! Copying database to writable storage...")
-        read_only_db = get_assets_dir() / "data" / "love_quotes.db"
+        read_only_db = get_assets_dir() / "data" / "love_quotes.db" 
         shutil.copy2(read_only_db, writable_db)
         
         conn = sqlite3.connect(writable_db)
@@ -39,11 +48,10 @@ def get_writable_db() -> Path:
     return writable_db
 
 def force_fresh_database() -> None:
-    user_dir = Path.home() / ".agapis_lapis_data"
-    writable_db = user_dir / "love_quotes.db"
+    db_path = get_writable_db()
     
-    if writable_db.exists():
-        os.remove(writable_db)
+    if db_path.exists():
+        os.remove(db_path)
         print("Old database deleted.")
         
     get_writable_db()

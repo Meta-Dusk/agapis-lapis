@@ -33,8 +33,10 @@ class MainApp:
             )
         ]
         self.wifi_req_ctrls: list[ft.Control] = [*self._wifi_req_segs]
-        self.api: APIManager = None
-        print("[MainApp] Finished setup 1/3")
+        self.api = APIManager()
+        self.quote_txt: DefaultText = None
+        self.progress_txt: DefaultText = None
+        print("[MainApp] Finished setup 1/2")
     
     @property
     def is_wifi_connected(self) -> bool:
@@ -135,12 +137,7 @@ class MainApp:
         self.wifi_btn.on_click = lambda _: self.check_connection()
         self.page.appbar.actions.insert(1, self.wifi_btn)
         self.page.update()
-        print("[MainApp] Finished setup 2/3")
-    
-    async def start_apis(self) -> None:
-        self.api = APIManager()
-        self.api.start()
-        print("[MainApp] Finished setup 3/3")
+        print("[MainApp] Finished setup 2/2")
     
     async def on_long_press_ttb(self, _) -> None:
         async def on_submit(e: ft.Event[ft.TextField]) -> None:
@@ -179,6 +176,9 @@ class MainApp:
             elif data == "db.reset":
                 force_fresh_database()
                 clear_val()
+                self.quote_txt.value = "Press the heart to get a quote!"
+                try_update(self.quote_txt)
+                self.update_stats_txt()
                 return
             
             elif data == "progress.reset":
@@ -288,30 +288,34 @@ class MainApp:
             expand=True, key="home"
         )
 
+    def update_stats_txt(self, update: bool = True) -> None:
+        stats = get_progress_stats()
+        self.progress_txt.value = f"Discovered: {stats.seen} / {stats.total}"
+        if update: try_update(self.progress_txt)
+    
     def get_lqg_view(self):
         async def fetch_local_quote() -> None:
             stats = get_progress_stats()
             quote = get_unseen_quote()
-            quote_txt.value = (
+            self.quote_txt.value = (
                 f"{quote.quote}\n— {quote.author}"
                 if quote else
                 f"🏆 ACHIEVEMENT UNLOCKED 🏆\nYou have read all {stats.total} quotes!"
             )
-            try_update(quote_txt)
-            progress_txt.value = f"Discovered: {stats.seen} / {stats.total}"
-            progress_txt.visible = True
-            try_update(progress_txt)
+            try_update(self.quote_txt)
+            self.progress_txt.visible = True
+            self.update_stats_txt()
         
         def fetch_api_quote(text: str) -> None:
-            quote_txt.value = text
-            try_update(quote_txt)
-            progress_txt.visible = False
-            try_update(progress_txt)
+            self.quote_txt.value = text
+            try_update(self.quote_txt)
+            self.progress_txt.visible = False
+            try_update(self.progress_txt)
         
         async def on_fab_click(e: ft.Event[AnimatedFAB]) -> None:
-            e.control.disabled = True
-            try_update(e.control)
-            e.control._emphasis(e)
+            if e.page.floating_action_button:
+                e.page.floating_action_button = None
+            e.page.update()
             for seg in seg_btn.segments:
                 if seg.disabled: continue
                 seg.disabled = True
@@ -323,8 +327,8 @@ class MainApp:
             else:
                 spinner.visible = True
                 try_update(spinner)
-                quote_txt.value = "Loading new quote..."
-                try_update(quote_txt)
+                self.quote_txt.value = "Loading new quote..."
+                try_update(self.quote_txt)
                 
             if value == "api_ninjas":
                 fetch_api_quote(await self.api.get_ninja_quote())
@@ -342,21 +346,22 @@ class MainApp:
                     continue
                 seg.disabled = False
             try_update(seg_btn)
-            e.control.disabled = False
-            try_update(e.control)
+            if e.page.floating_action_button is None:
+                e.page.floating_action_button = AnimatedFAB(on_click=on_fab_click)
+            e.page.update()
         
         def on_change(e: ft.Event[ft.SegmentedButton]) -> None:
             self.check_connection(show_notifs=False)
             if e.control.selected[0] != "local":
-                progress_txt.visible = False
+                self.progress_txt.visible = False
             else:
-                progress_txt.visible = True
-            try_update(progress_txt)
+                self.progress_txt.visible = True
+            try_update(self.progress_txt)
         
-        quote_txt = DefaultText("Press the heart to get a quote!")
+        self.quote_txt = DefaultText("Press the heart to get a quote!")
         spinner = ft.ProgressRing(width=50, height=50, visible=False)
         stats = get_progress_stats()
-        progress_txt = DefaultText(
+        self.progress_txt = DefaultText(
             f"Discovered: {stats.seen} / {stats.total}",
             size=14, color=ft.Colors.OUTLINE
         )
@@ -384,10 +389,10 @@ class MainApp:
                 ft.Column(
                     controls=[
                         ft.AnimatedSwitcher(
-                            quote_txt, duration=100,
+                            self.quote_txt, duration=100,
                             reverse_duration=100
                         ),
-                        progress_txt,
+                        self.progress_txt,
                         spinner
                     ],
                     alignment=ft.MainAxisAlignment.CENTER,
@@ -406,7 +411,7 @@ class MainApp:
             self.page.floating_action_button = None
         self.page.appbar.title = "Magic Eight Ball"
         return ft.Container(
-            content=EightBall(),
+            content=EightBall(radius=self.page.width * 0.45),
             alignment=ft.Alignment.CENTER,
             expand=True, key="magic_eight_ball"
         )

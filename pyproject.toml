@@ -1,16 +1,20 @@
 [project]
 name = "agapis-lapis"
-version = "0.2.0"
+version = "0.3.0"
 description = "A love quotes generator app... Or is it?"
 readme = "README.md"
 requires-python = ">=3.13"
 authors = [{ name = "MetaDusk", email = "andredcxxv@gmail.com" }]
 license = { text = "AGPL-3.0" }
 
-dependencies = [
-    "cerebras-cloud-sdk>=1.67.0",
-    "flet[all]>=0.80.5",
-    "python-dotenv>=1.2.1",
+dependencies = ["flet>=0.84.0"]
+
+[dependency-groups]
+dev = [
+    "flet-cli>=0.84.0",
+    "flet-desktop>=0.84.0",
+    "flet-web>=0.84.0",
+    "tomlkit>=0.14.0",
 ]
 
 [tool.flet]
@@ -24,14 +28,22 @@ cleanup_on_compile = true
 build_number = 1
 
 [tool.flet.assets]
-include = ["assets/**"]
+include = ["assets"]
 
 [tool.flet.splash]
 color = "#ffffff"
-dark_color = "#333333"
+dark_color = "#1c2120"
 
 [tool.flet.app]
 path = "src"
+exclude = [
+    "tests",
+    "tests/**",
+    "__pycache__",
+    "*.pyc",
+    "*.egg-info",
+    "*.egg-info/**",
+]
 
 [tool.flet.app.boot_screen]
 show = true
@@ -40,9 +52,6 @@ message = "Booting up Agapis Lapis..."
 [tool.flet.app.startup_screen]
 show = true
 message = "Starting Agapis Lapis..."
-
-[dependency-groups]
-dev = ["tomlkit>=0.13.3"]
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
