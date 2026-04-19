@@ -1,6 +1,6 @@
 import flet as ft
 
-from tests.test_handler import setup_test
+from core.test_handler import setup_test
 from core.connection import has_internet_connection
 
 @setup_test("WiFi Connection Test")

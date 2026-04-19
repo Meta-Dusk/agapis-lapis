@@ -1,6 +1,6 @@
 import flet as ft
 
-from tests.test_handler import setup_test
+from core.test_handler import setup_test
 from components.text import DefaultText
 from core.local_database import get_progress_stats, get_unseen_quote, set_all_progress
 

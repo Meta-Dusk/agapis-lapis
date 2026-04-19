@@ -3,7 +3,7 @@ import os, httpx
 from typing import Optional, TypeAlias, Literal
 from dotenv import load_dotenv
 
-from tests.test_handler import setup_test
+from core.test_handler import setup_test
 from components.text import DefaultText
 
 ResponseType: TypeAlias = Literal["author", "quote", "work"]

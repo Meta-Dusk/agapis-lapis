@@ -1,7 +1,7 @@
 import flet as ft
 from dataclasses import dataclass
 
-from tests.test_handler import setup_test
+from core.test_handler import setup_test
 from components.appbar import GlobalAppBar
 
 @dataclass
