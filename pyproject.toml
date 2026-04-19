@@ -40,6 +40,7 @@ dark_color = "#1c2120"
 
 [tool.flet.app]
 path = "src"
+exclude = ["src/tests", "tools"]
 
 [tool.flet.app.boot_screen]
 show = true

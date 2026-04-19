@@ -24,7 +24,7 @@ from dataclasses import dataclass
 
 
 # Setup filenames accordingly here. Remember: They are CASE-SENSITIVE!
-APP_NAME = "Agapis Lapis"
+APP_NAME = "AgapisLapis"
 INSTALLER_NAME = "installer.iss"
 
 # Initialize colorama (auto resets colors after each print)

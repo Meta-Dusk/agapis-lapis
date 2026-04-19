@@ -416,7 +416,7 @@ class MainApp:
             self.page.floating_action_button = None
         self.page.appbar.title = "Magic Eight Ball"
         return ft.Container(
-            content=EightBall(),
+            content=EightBall(radius=self.page.width * 0.45),
             alignment=ft.Alignment.CENTER,
             expand=True, key="magic_eight_ball"
         )

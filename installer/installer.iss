@@ -16,7 +16,7 @@
 [Setup]
 ; Make sure to always generate a GUID with Inno Setup Compiler in #AppId.
 ; Replace only the "{}" and leave the open {, so it'll be like "{{}".
-AppId={{}
+AppId={{3F6963C7-0E75-4B5E-BDEE-4CBD2F5E26A0}
 
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
