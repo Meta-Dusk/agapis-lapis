@@ -8,10 +8,14 @@ This app is made for a friend of mine. The name **Agapis Lapis** comes from a co
 | ------- | ----------- |
 | **Love Quotes Generator** | You can get love quotes from three sources, two of which requires an internet connection. |
 | **Magic Eight Ball** | An eight ball that just gives you vague answers to whatever questions you may have. |
+| **Hidden Features** | Essentially easter eggs, and also serves as dev features, that I won't be revealing how to use. |
 
 ## How to Use
 
-Pending...
+You can just open the app, and see what you can do there, as it's not much. You can just get love quotes (both offline and online), and you can use the **Magic Eight Ball** for random shenanigans.
+As for why the love quotes generator needs an internet connection, that because of the sources of where you can get the quotes. There are currently only three; **local**, **Cerebras** (AI API), and **Ninjas** (API Ninjas). You can select either of the three for your love quote. Only the ones that are obtained from an API requires an internet connection.
+Additionally, the **Love Quote of the Day** feature gets its data locally, making it an offline-safe feature as well.
+As for the hinted _hidden features_, all I'm going to reveal, is that it's in the appbar's actions ;).
 
 ## Installation / Setup
 
