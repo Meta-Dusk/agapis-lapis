@@ -1,25 +1,27 @@
 import flet as ft
-from datetime import datetime
 from typing import Optional
+from datetime import datetime
 
 from components.eight_ball import EightBall
 from components.buttons import AnimatedFAB
 from components.text import DefaultText
 from components.notifs import SimpleNotif, SimpleErrorNotif
+from components.layouts import CenteredColumn
 from core.routes import APP_ROUTES_DICT
 from core.preferences import Preferences
-from core.assets import Assets
 from core.connection import has_internet_connection
-from core.local_database import get_progress_stats, get_unseen_quote, set_all_progress, force_fresh_database
+from core.local_database import (
+    get_progress_stats, get_unseen_quote, set_all_progress, force_fresh_database)
 from core.components import try_update
 from managers.apis import APIManager, QuoteData
+from managers.bday import BdayManager
 
 class MainApp:
     def __init__(self, page: ft.Page) -> None:
         self.page = page
         self.prefs = Preferences()
         self._is_wifi_connected: bool = False
-        self.wifi_btn = ft.IconButton(ft.Icons.WIFI)
+        self.wifi_btn = ft.IconButton(ft.Icons.WIFI, tooltip="Checks internet connection.")
         self._wifi_req_segs = [
             ft.Segment(
                 value="cerebras", label="Cerebras",
@@ -36,6 +38,7 @@ class MainApp:
         self.api = APIManager()
         self.quote_txt: DefaultText = None
         self.progress_txt: DefaultText = None
+        self.bday_manager = BdayManager(page)
         print("[MainApp] Finished setup 1/2")
     
     @property
@@ -58,42 +61,11 @@ class MainApp:
     
     @property
     def get_wifi_req_tooltip(self) -> Optional[str]:
-        return None if self.is_wifi_connected else "Feature needs a WiFI connection."
+        """Returns tooltips for features that needs an internet connection."""
+        return None if not self.is_wifi_connected else "Feature needs an internet connection."
     
-    async def check_bday(self) -> bool:
-        now = datetime.now()
-        user_name = await self.prefs.get("user_name")
-        if user_name is None: return
-        user_name = user_name.lower()
-        if now.month != 4 or now.day != 22 or user_name != "isaac":
-            return True
-        return False
-    
-    def show_bday_dlg(self) -> None:
-        dlg = ft.AlertDialog(
-            title="Happy Birthday, Isaac!",
-            content=ft.Column(
-                controls=[
-                    ft.Image(
-                        Assets.images.bday_cake, fit=ft.BoxFit.COVER,
-                        width=self.page.width * 0.25,
-                    ),
-                    ft.Text(
-                        "This post was made by MetaDusk", size=16,
-                        color=ft.Colors.SECONDARY, italic=True,
-                        text_align=ft.TextAlign.CENTER
-                    )
-                ],
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True
-            ),
-            actions=[
-                ft.Button(
-                    content="Thanks", icon=ft.Icons.CAKE_ROUNDED,
-                    on_click=lambda e: e.page.pop_dialog()
-                )
-            ]
-        )
-        self.page.show_dialog(dlg)
+    async def check_bday(self) -> None:
+        self.bday_manager.greet(await self.prefs.get("user_name"))
     
     def check_connection(self, *, show_notifs: bool = True) -> None:
         if self.is_wifi_connected:
@@ -119,7 +91,7 @@ class MainApp:
         self.page.show_dialog(SimpleNotif("Connection successful!", duration=2000))
     
     def setup(self) -> None:
-        """Adds other page-specific configurations."""
+        """**IMPORTANT**: Final MainApp setup."""
         self.page.drawer = ft.NavigationDrawer(
             controls=[
                 ft.NavigationDrawerDestination(icon=ft.Icons.HOME_SHARP, label="Home"),
@@ -132,7 +104,7 @@ class MainApp:
             )
         )
         theme_toggle_btn: ft.IconButton = self.page.appbar.actions[0]
-        theme_toggle_btn.on_long_press = self.on_long_press_ttb
+        theme_toggle_btn.on_long_press = self.ttb_handle_long_press
         self.check_connection(show_notifs=False)
         self.wifi_btn.on_click = lambda _: self.check_connection()
         self.page.appbar.actions.insert(1, self.wifi_btn)
@@ -141,12 +113,12 @@ class MainApp:
         
         async def wake_proxy_server() -> None:
             print("[MainApp] Sending silent wake-up ping to proxy server...")
-            await self.api.get_ninja_quote() 
+            await self.api.get_cerebras_quote() 
             print("[MainApp] Proxy server is awake and ready!")
         
         self.page.run_task(wake_proxy_server)
     
-    async def on_long_press_ttb(self, _) -> None:
+    async def ttb_handle_long_press(self, _) -> None:
         async def on_submit(e: ft.Event[ft.TextField]) -> None:
             data: str = e.data
             data.strip()
@@ -224,8 +196,7 @@ class MainApp:
                     duration=3000
                 )
             )
-            is_bday = await self.check_bday()
-            if is_bday: self.show_bday_dlg()
+            await self.check_bday()
         
         def on_change(e: ft.Event[ft.TextField]) -> None:
             data: str = e.data
@@ -260,42 +231,101 @@ class MainApp:
         hidden_info = ft.Text(color=ft.Colors.TERTIARY, italic=True, size=14)
         dlg = ft.AlertDialog(
             title="Enter Your Name",
-            content=ft.Column(
+            content=CenteredColumn(
                 controls=[
                     ft.TextField(
                         max_lines=1, max_length=16, value=user_name,
                         on_submit=on_submit, on_change=on_change,
                         hint_text="Woah, what's this?", autofocus=True
                     ),
-                ],
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True
+                ], tight=True
             ),
         )
         self.page.show_dialog(dlg)
     
+    async def get_quote_of_the_day(self) -> QuoteData:
+        today_str = datetime.now().date().isoformat() # "example: 2026-04-20"
+        saved_date = await self.prefs.get("qotd_date")
+        
+        if saved_date == today_str:
+            quote = await self.prefs.get("qotd_quote")
+            author = await self.prefs.get("qotd_author")
+            return QuoteData(quote=quote, author=author, source="local")
+        else:
+            new_quote = get_unseen_quote() 
+            
+            if not new_quote:
+                new_quote = QuoteData(
+                    quote="Love is the beauty of the soul.", 
+                    author="Saint Augustine", 
+                    source="local"
+                )
+            
+            await self.prefs.set("qotd_date", today_str)
+            await self.prefs.set("qotd_quote", new_quote.quote)
+            await self.prefs.set("qotd_author", new_quote.author)
+            
+            return new_quote
+    
+    # * === ROUTE VIEWS ===
     def get_home_view(self):
         if self.page.floating_action_button:
             self.page.floating_action_button = None
         self.page.appbar.title = "Home"
-        return ft.Column(
-            controls=[
-                ft.Text(
-                    "Welcome to Agapis Lapis!",
-                    size=32, color=ft.Colors.PRIMARY, weight=ft.FontWeight.BOLD
-                ),
-                ft.Text(
-                    "To start, please open the navigation menu at the top-left of the screen.",
-                    size=16, color=ft.Colors.SECONDARY,
-                ),
-                ft.Text(
-                    "Some features requires an internet connection.",
-                    size=16, color=ft.Colors.SECONDARY, italic=True
-                ),
-            ],
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            expand=True, key="home"
+        
+        qotd_label = DefaultText(
+            "☀️ Quote of the Day ✨", size=18,
+            color=ft.Colors.TERTIARY, weight=ft.FontWeight.BOLD
         )
-
+        qotd_text = DefaultText(
+            "Awaiting the local oracle's response...",
+            size=16, color=ft.Colors.SECONDARY
+        )
+        shim = ft.Shimmer(
+            base_color=ft.Colors.SECONDARY,
+            highlight_color=ft.Colors.PRIMARY,
+            content=qotd_text
+        )
+        
+        qotd_card = ft.Container(
+            content=CenteredColumn(
+                controls=[
+                    qotd_label,
+                    ft.Divider(ft.Colors.SECONDARY),
+                    shim
+                ],
+                tight=True, scroll=ft.ScrollMode.ALWAYS
+            ),
+            padding=20, bgcolor=ft.Colors.SURFACE_CONTAINER,
+            border_radius=15, margin=ft.Margin.symmetric(vertical=20)
+        )
+        
+        async def load_home_qotd() -> None:
+            quote_data = await self.get_quote_of_the_day()
+            qotd_text.value = f'"{quote_data.quote}"\n\n— {quote_data.author}'
+            try_update(qotd_text)
+            
+        self.page.run_task(load_home_qotd)
+        
+        return CenteredColumn(
+            controls=[
+                ft.Shimmer(
+                    content=ft.Text(
+                        "Welcome to Agapis Lapis!",
+                        size=32, color=ft.Colors.PRIMARY, weight=ft.FontWeight.BOLD,
+                        text_align=ft.TextAlign.CENTER
+                    ),
+                    base_color=ft.Colors.PRIMARY, highlight_color=ft.Colors.INVERSE_PRIMARY,
+                    period=3000
+                ),
+                qotd_card,
+                ft.Text(
+                    "Some features require an internet connection.",
+                    size=14, color=ft.Colors.OUTLINE, italic=True
+                ),
+            ], expand=True, key="home"
+        )
+        
     def update_stats_txt(self, update: bool = True) -> None:
         stats = get_progress_stats()
         self.progress_txt.value = f"Discovered: {stats.seen} / {stats.total}"
@@ -308,7 +338,8 @@ class MainApp:
             self.quote_txt.value = (
                 f"{quote.quote}\n— {quote.author}"
                 if quote else
-                f"🏆 ACHIEVEMENT UNLOCKED 🏆\nYou have read all {stats.total} quotes!"
+                "🏆 ACHIEVEMENT UNLOCKED 🏆\n"
+                f"You have read all {stats.total} local quotes!"
             )
             try_update(self.quote_txt)
             self.progress_txt.visible = True
@@ -396,9 +427,9 @@ class MainApp:
             ]
         )
     
-        return ft.Column(
+        return CenteredColumn(
             controls=[
-                ft.Column(
+                CenteredColumn(
                     controls=[
                         ft.AnimatedSwitcher(
                             self.quote_txt, duration=100,
@@ -406,16 +437,10 @@ class MainApp:
                         ),
                         self.progress_txt,
                         spinner
-                    ],
-                    alignment=ft.MainAxisAlignment.CENTER,
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                    tight=True
+                    ], tight=True
                 ),
                 seg_btn
-            ],
-            alignment=ft.MainAxisAlignment.CENTER,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            key="love_quotes_generator"
+            ], key="love_quotes_generator", scroll=ft.ScrollMode.ALWAYS
         )
 
     def get_meb_view(self):
