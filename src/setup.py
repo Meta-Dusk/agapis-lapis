@@ -50,7 +50,8 @@ def setup_main(
                 page.appbar.actions.append(
                     ft.IconButton(
                         ft.Icons.CLOSE,
-                        on_click=lambda _: page.run_task(page.window.close)
+                        on_click=lambda _: page.run_task(page.window.close),
+                        tooltip="Click to close the application."
                     )
                 )
                 page.window.title_bar_hidden = True

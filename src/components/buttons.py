@@ -1,5 +1,6 @@
 import flet as ft
-from typing import Optional
+import asyncio, inspect
+from typing import Optional, Callable
 from dataclasses import field
 
 @ft.control
@@ -56,3 +57,51 @@ class PopDialogButton(ft.Button):
     """Calls `page.pop_dialog()` when clicked."""
     def init(self):
         self.on_click = lambda e: e.page.pop_dialog()
+
+class AnimatedCopyButton(ft.IconButton):
+    def __init__(
+        self, *,
+        get_text_callback: Callable[[], str],
+        on_copy_callback: Callable[[str], None]
+    ):
+        super().__init__()
+        self.get_text_callback = get_text_callback
+        self.on_copy_callback = on_copy_callback
+        self.recently_pressed = False
+        
+        self.icon = ft.Icons.COPY_ALL_ROUNDED
+        self.icon_color = ft.Colors.OUTLINE
+        self.tooltip = "Copy to clipboard"
+        self.on_click = self.handle_copy
+
+    async def handle_copy(self, _) -> None:
+        if self.recently_pressed: return
+        
+        text = self.get_text_callback()
+        if (
+            text is None or
+            text.startswith("Press") or
+            text.startswith("Awaiting") or
+            text.startswith("Loading") or
+            text.startswith("Error")
+        ):
+            return
+        
+        self.recently_pressed = True
+        print(f"Copying text to clipboard: {text}")
+        
+        if self.on_copy_callback:
+            if inspect.iscoroutinefunction(self.on_copy_callback):
+                await self.on_copy_callback(text)
+            else:
+                self.on_copy_callback(text)
+        
+        self.icon = ft.Icons.CHECK_CIRCLE_OUTLINE_ROUNDED
+        self.icon_color = ft.Colors.GREEN_400
+        self.update()
+        
+        await asyncio.sleep(2)
+        self.icon = ft.Icons.COPY_ALL_OUTLINED
+        self.icon_color = ft.Colors.OUTLINE
+        self.update()
+        self.recently_pressed = False

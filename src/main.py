@@ -48,7 +48,7 @@ async def main(page: ft.Page):
     
     page.on_route_change = route_change
     page.add(view_container)
-    app.setup()
+    app.setup(show_notif=True)
     route_change()
     
     await app.check_bday()
