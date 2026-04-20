@@ -3,10 +3,10 @@ from typing import Optional
 from datetime import datetime
 
 from components.eight_ball import EightBall
-from components.buttons import AnimatedFAB
+from components.buttons import AnimatedFAB, AnimatedCopyButton
 from components.text import DefaultText
 from components.notifs import SimpleNotif, SimpleErrorNotif
-from components.layouts import CenteredColumn
+from components.layouts import CenteredColumn, CenteredRow
 from core.routes import APP_ROUTES_DICT
 from core.preferences import Preferences
 from core.connection import has_internet_connection
@@ -15,6 +15,7 @@ from core.local_database import (
 from core.components import try_update
 from managers.apis import APIManager, QuoteData
 from managers.bday import BdayManager
+from managers.clipboard import ClipboardManager
 
 class MainApp:
     def __init__(self, page: ft.Page) -> None:
@@ -39,6 +40,7 @@ class MainApp:
         self.quote_txt: DefaultText = None
         self.progress_txt: DefaultText = None
         self.bday_manager = BdayManager(page)
+        self.clipboard = ClipboardManager(page, show_notifs=True)
         print("[MainApp] Finished setup 1/2")
     
     @property
@@ -90,7 +92,7 @@ class MainApp:
             return
         self.page.show_dialog(SimpleNotif("Connection successful!", duration=2000))
     
-    def setup(self) -> None:
+    def setup(self, *, show_notif: bool = False) -> None:
         """**IMPORTANT**: Final MainApp setup."""
         self.page.drawer = ft.NavigationDrawer(
             controls=[
@@ -115,6 +117,8 @@ class MainApp:
             print("[MainApp] Sending silent wake-up ping to proxy server...")
             if await self.api.ping_proxy_server():
                 print("[MainApp] Proxy server is awake and ready!")
+                if not show_notif: return
+                self.page.show_dialog(SimpleNotif("Proxy server is active!"))
         
         self.page.run_task(wake_proxy_server)
     
@@ -155,9 +159,10 @@ class MainApp:
             elif data == "db.reset":
                 force_fresh_database()
                 clear_val()
+                self.update_stats_txt()
+                if self.quote_txt is None: return
                 self.quote_txt.value = "Press the heart to get a quote!"
                 try_update(self.quote_txt)
-                self.update_stats_txt()
                 return
             
             elif data == "progress.reset":
@@ -292,9 +297,12 @@ class MainApp:
                 controls=[
                     qotd_label,
                     ft.Divider(ft.Colors.SECONDARY),
-                    shim
-                ],
-                tight=True, scroll=ft.ScrollMode.ALWAYS
+                    shim,
+                    AnimatedCopyButton(
+                        get_text_callback=lambda: qotd_text.value,
+                        on_copy_callback=self.clipboard.set_to_clipboard
+                    )
+                ], tight=True
             ),
             padding=20, bgcolor=ft.Colors.SURFACE_CONTAINER,
             border_radius=15, margin=ft.Margin.symmetric(vertical=20)
@@ -323,10 +331,11 @@ class MainApp:
                     "Some features require an internet connection.",
                     size=14, color=ft.Colors.OUTLINE, italic=True
                 ),
-            ], expand=True, key="home"
+            ], expand=True, key="home", scroll=ft.ScrollMode.ALWAYS
         )
         
     def update_stats_txt(self, update: bool = True) -> None:
+        if self.progress_txt is None: return
         stats = get_progress_stats()
         self.progress_txt.value = f"Discovered: {stats.seen} / {stats.total}"
         if update: try_update(self.progress_txt)
@@ -435,7 +444,15 @@ class MainApp:
                             self.quote_txt, duration=100,
                             reverse_duration=100
                         ),
-                        self.progress_txt,
+                        CenteredRow(
+                            controls=[
+                                self.progress_txt,
+                                AnimatedCopyButton(
+                                    get_text_callback=lambda: self.quote_txt.value,
+                                    on_copy_callback=self.clipboard.set_to_clipboard
+                                )
+                            ], tight=True, spacing=16
+                        ),
                         spinner
                     ], tight=True
                 ),
