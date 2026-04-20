@@ -5,7 +5,7 @@ from dataclasses import dataclass
 SourceTypes: TypeAlias = Literal["ninja", "cerebras"]
 NinjaData: TypeAlias = dict[Literal["success", "quote", "author", "source"], bool | str]
 CerebrasData: TypeAlias = dict[Literal["success", "text"], bool | str]
-PingData: TypeAlias = dict[Literal["success"], bool]
+PingData: TypeAlias = dict[Literal["status", "message"], str]
 
 @dataclass
 class QuoteData:
@@ -19,11 +19,6 @@ class ProxyURL:
     
     def get_quote(self, endpoint: SourceTypes) -> str:
         return f"{self.base}/generate-quote/{endpoint}"
-    
-    @property
-    def test(self) -> str:
-        """Returns the URL for a simple proxy server test."""
-        return f"{self.base}/generate-quote/cerebras/test"
 
 def sanitize_quote(quote: str) -> str:
     """Removes quotes and spaces."""
@@ -116,7 +111,7 @@ class APIManager:
                 return None
     
     async def ping_proxy_server(self, timeout: float = 60.0) -> bool:
-        endpoint = self.proxy.test
+        endpoint = self.proxy.base
         
         async with httpx.AsyncClient(timeout=timeout) as client:
             try:
@@ -125,7 +120,7 @@ class APIManager:
                 
                 data: PingData = response.json()
                 
-                if data.get("success"):
+                if data.get("status") == "Online":
                     return True
                 return False
             except httpx.TimeoutException:

@@ -113,8 +113,8 @@ class MainApp:
         
         async def wake_proxy_server() -> None:
             print("[MainApp] Sending silent wake-up ping to proxy server...")
-            await self.api.get_cerebras_quote() 
-            print("[MainApp] Proxy server is awake and ready!")
+            if await self.api.ping_proxy_server():
+                print("[MainApp] Proxy server is awake and ready!")
         
         self.page.run_task(wake_proxy_server)
     
