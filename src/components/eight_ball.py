@@ -219,9 +219,8 @@ class EightBall(ft.Container):
         
         
 @setup_test("Eight Ball Test")
-def main(page: ft.Page):
+def test(page: ft.Page):
     page.add(EightBall())
 
-
 if __name__ == "__main__":
-    ft.run(main)
+    ft.run(test)

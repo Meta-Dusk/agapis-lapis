@@ -37,10 +37,10 @@ class AnimatedFAB(ft.FloatingActionButton):
     
     def init(self) -> None:
         if self.on_click is None:
-            self.on_click = self._emphasis
+            self.on_click = self.emphasis
         self.on_animation_end = self._on_animation_end
     
-    def _emphasis(self, e: ft.Event[ft.FloatingActionButton]) -> None:
+    def emphasis(self, e: ft.Event[ft.FloatingActionButton]) -> None:
         if self.is_animating: return
         e.control.scale = 1.2
         e.control.update()
@@ -50,3 +50,9 @@ class AnimatedFAB(ft.FloatingActionButton):
         e.control.scale = 1.0
         e.control.update()
         self.is_animating = False
+
+@ft.control
+class PopDialogButton(ft.Button):
+    """Calls `page.pop_dialog()` when clicked."""
+    def init(self):
+        self.on_click = lambda e: e.page.pop_dialog()

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 SourceTypes: TypeAlias = Literal["ninja", "cerebras"]
 NinjaData: TypeAlias = dict[Literal["success", "quote", "author", "source"], bool | str]
 CerebrasData: TypeAlias = dict[Literal["success", "text"], bool | str]
+PingData: TypeAlias = dict[Literal["status", "message"], str]
 
 @dataclass
 class QuoteData:
@@ -18,6 +19,10 @@ class ProxyURL:
     
     def get_quote(self, endpoint: SourceTypes) -> str:
         return f"{self.base}/generate-quote/{endpoint}"
+
+def sanitize_quote(quote: str) -> str:
+    """Removes quotes and spaces."""
+    return quote.strip().strip('"').strip()
 
 class APIManager:
     def __init__(self):
@@ -44,7 +49,10 @@ class APIManager:
             except httpx.TimeoutException:
                 print("[Timeout] Server took too long to wake up.")
                 return QuoteData(
-                    quote="The oracle is waking from a deep slumber... Please try again in a moment.",
+                    quote=(
+                        "The oracle is waking from a deep slumber... "
+                        "Please try again in a moment."
+                    ),
                     author="System",
                     source="error"
                 )
@@ -76,10 +84,10 @@ class APIManager:
                     
                     if "—" in raw_text:
                         parts = raw_text.rsplit("—", 1)
-                        quote_part = parts[0].strip().strip('"').strip() # Removes the quotes and spaces
+                        quote_part = sanitize_quote(parts[0])
                         author_part = parts[1].strip()
                     else:
-                        quote_part = raw_text.strip().strip('"').strip()
+                        quote_part = sanitize_quote(raw_text)
                         author_part = "Unknown"
 
                     return QuoteData(
@@ -91,10 +99,33 @@ class APIManager:
             except httpx.TimeoutException:
                 print("[Timeout] Server took too long to wake up.")
                 return QuoteData(
-                    quote="The stars are aligning... give the oracle just a moment to wake up, then try again.",
+                    quote=(
+                        "The stars are aligning... give the oracle just a "
+                        "moment to wake up, then try again."
+                    ),
                     author="System",
                     source="error"
                 )
             except httpx.HTTPError as e:
                 print(f"[Cerebras Proxy Error]: {e}")
                 return None
+    
+    async def ping_proxy_server(self, timeout: float = 60.0) -> bool:
+        endpoint = self.proxy.base
+        
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            try:
+                response = await client.get(endpoint)
+                response.raise_for_status()
+                
+                data: PingData = response.json()
+                
+                if data.get("status") == "Online":
+                    return True
+                return False
+            except httpx.TimeoutException:
+                print("[Timeout] Server took too long to wake up.")
+                return False
+            except httpx.HTTPError as e:
+                print(f"[Cerebras Proxy Error]: {e}")
+                return False

@@ -1,5 +1,4 @@
 import flet as ft
-import asyncio
 
 from setup import setup_main, PC_PLATFORMS
 from app import MainApp
@@ -52,8 +51,6 @@ async def main(page: ft.Page):
     app.setup()
     route_change()
     
-    if await app.check_bday():
-        await asyncio.sleep(2)
-        app.show_bday_dlg()
+    await app.check_bday()
 
 ft.run(main)
