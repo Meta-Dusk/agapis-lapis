@@ -120,7 +120,7 @@ class APIManager:
                 
                 data: PingData = response.json()
                 
-                if data.get("status") == "Online":
+                if data.get("status"):
                     return True
                 return False
             except httpx.TimeoutException:
